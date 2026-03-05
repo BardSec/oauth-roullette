@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Email Roulette</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── Header ─────────────────────────────────────────────────── -->
+  <header>
+    <div class="header-inner">
+      <h1>&#127922; Email Roulette</h1>
+      <div id="user-bar">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Main ───────────────────────────────────────────────────── -->
+  <main>
+
+    <!-- Sign-in screen -->
+    <section id="screen-login" class="screen active">
+      <div class="card center-card">
+        <div class="big-emoji">&#128231;</div>
+        <h2>Welcome to Email Roulette</h2>
+        <p>Sign in with your Microsoft 365 account and spin the wheel to reveal a random email from your junk folder.</p>
+        <a href="/auth/login" class="btn btn-primary">Sign in with Microsoft</a>
+      </div>
+    </section>
+
+    <!-- Roulette screen -->
+    <section id="screen-roulette" class="screen">
+      <div class="roulette-area">
+        <!-- Wheel -->
+        <div class="wheel-wrapper">
+          <div class="wheel-pointer">&#9660;</div>
+          <canvas id="wheel-canvas" width="320" height="320"></canvas>
+        </div>
+
+        <button id="spin-btn" class="btn btn-primary btn-spin" disabled>
+          Spin!
+        </button>
+      </div>
+
+      <!-- Email card (hidden until a spin lands) -->
+      <div id="email-card" class="card email-card hidden">
+        <div class="email-card-header">
+          <span id="email-subject" class="email-subject"></span>
+          <span id="email-date" class="email-date"></span>
+        </div>
+        <div class="email-from">
+          <strong>From:</strong>
+          <span id="email-from-name"></span>
+          <span id="email-from-addr" class="email-addr"></span>
+        </div>
+        <p id="email-preview" class="email-preview"></p>
+        <a id="email-link" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+          Open in Outlook
+        </a>
+      </div>
+
+      <!-- Empty-folder message -->
+      <div id="empty-message" class="card center-card hidden">
+        <div class="big-emoji">&#127881;</div>
+        <p id="empty-text"></p>
+      </div>
+
+      <!-- Error banner -->
+      <div id="error-banner" class="error-banner hidden"></div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

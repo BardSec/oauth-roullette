@@ -1,0 +1,13 @@
+services:
+  email-roulette:
+    build: .
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - .env
+    restart: unless-stopped
+    # Read-only root filesystem — nothing in the app writes to disk
+    read_only: true
+    # Express-session uses in-memory storage (no disk writes needed)
+    tmpfs:
+      - /tmp
