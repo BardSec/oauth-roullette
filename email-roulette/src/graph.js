@@ -59,4 +59,70 @@ async function getRandomJunkEmail(accessToken) {
   };
 }
 
-module.exports = { getRandomJunkEmail };
+/**
+ * Returns the top-level mail folders for the signed-in user.
+ *
+ * @param {string} accessToken
+ * @returns {Array} Array of folder objects { id, displayName, totalItemCount }
+ */
+async function getMailFolders(accessToken) {
+  const headers = { Authorization: `Bearer ${accessToken}` };
+  const res = await axios.get(`${GRAPH_BASE}/me/mailFolders`, {
+    headers,
+    params: { $top: 50, $select: "id,displayName,totalItemCount" },
+  });
+  return res.data.value;
+}
+
+/**
+ * Searches a mailbox folder using Graph API KQL search.
+ *
+ * @param {string} accessToken
+ * @param {object} opts
+ * @param {string} [opts.folderId]       - Mail folder ID, or null for all mail
+ * @param {string} [opts.query]          - Keyword search (subject + body)
+ * @param {string} [opts.from]           - Filter by sender address
+ * @param {string} [opts.subject]        - Filter by subject keyword
+ * @param {boolean} [opts.hasAttachments] - Only messages with attachments
+ * @returns {Array} Simplified message objects
+ */
+async function searchMailbox(accessToken, { folderId, query, from, subject, hasAttachments }) {
+  const headers = { Authorization: `Bearer ${accessToken}` };
+
+  // Build a KQL query string — Graph $search supports KQL for messages
+  const kqlParts = [];
+  if (query)          kqlParts.push(query);
+  if (from)           kqlParts.push(`from:${from}`);
+  if (subject)        kqlParts.push(`subject:${subject}`);
+  if (hasAttachments) kqlParts.push("hasAttachments:true");
+
+  const folderSegment = folderId
+    ? `/me/mailFolders/${folderId}/messages`
+    : "/me/messages";
+
+  const params = {
+    $top: 25,
+    $select: "subject,from,receivedDateTime,bodyPreview,webLink,hasAttachments",
+  };
+
+  if (kqlParts.length > 0) {
+    // $search and $orderby cannot be combined; relevance ordering is implicit
+    params["$search"] = `"${kqlParts.join(" ")}"`;
+  } else {
+    params["$orderby"] = "receivedDateTime desc";
+  }
+
+  const res = await axios.get(`${GRAPH_BASE}${folderSegment}`, { headers, params });
+
+  return res.data.value.map((msg) => ({
+    subject:          msg.subject || "(No subject)",
+    from:             msg.from?.emailAddress?.address || "unknown",
+    fromName:         msg.from?.emailAddress?.name || "",
+    receivedDateTime: msg.receivedDateTime,
+    bodyPreview:      msg.bodyPreview || "",
+    webLink:          msg.webLink || null,
+    hasAttachments:   msg.hasAttachments || false,
+  }));
+}
+
+module.exports = { getRandomJunkEmail, getMailFolders, searchMailbox };

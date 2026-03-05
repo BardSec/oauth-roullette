@@ -65,23 +65,36 @@ function drawWheel(canvas) {
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 
-const screenLogin   = document.getElementById("screen-login");
+const tabBar         = document.getElementById("tab-bar");
+const tabBtns        = document.querySelectorAll(".tab-btn");
+const screenLogin    = document.getElementById("screen-login");
 const screenRoulette = document.getElementById("screen-roulette");
-const userBar       = document.getElementById("user-bar");
-const spinBtn       = document.getElementById("spin-btn");
-const wheelCanvas   = document.getElementById("wheel-canvas");
-const emailCard     = document.getElementById("email-card");
-const emptyMessage  = document.getElementById("empty-message");
-const errorBanner   = document.getElementById("error-banner");
+const screenSearch   = document.getElementById("screen-search");
+const userBar        = document.getElementById("user-bar");
+const spinBtn        = document.getElementById("spin-btn");
+const wheelCanvas    = document.getElementById("wheel-canvas");
+const emailCard      = document.getElementById("email-card");
+const emptyMessage   = document.getElementById("empty-message");
+const errorBanner    = document.getElementById("error-banner");
 
 // Email card fields
-const elSubject     = document.getElementById("email-subject");
-const elDate        = document.getElementById("email-date");
-const elFromName    = document.getElementById("email-from-name");
-const elFromAddr    = document.getElementById("email-from-addr");
-const elPreview     = document.getElementById("email-preview");
-const elLink        = document.getElementById("email-link");
-const elEmptyText   = document.getElementById("empty-text");
+const elSubject   = document.getElementById("email-subject");
+const elDate      = document.getElementById("email-date");
+const elFromName  = document.getElementById("email-from-name");
+const elFromAddr  = document.getElementById("email-from-addr");
+const elPreview   = document.getElementById("email-preview");
+const elLink      = document.getElementById("email-link");
+const elEmptyText = document.getElementById("empty-text");
+
+// Search form refs
+const searchFolder      = document.getElementById("search-folder");
+const searchQuery       = document.getElementById("search-query");
+const searchFrom        = document.getElementById("search-from");
+const searchSubject     = document.getElementById("search-subject");
+const searchAttachments = document.getElementById("search-attachments");
+const searchBtn         = document.getElementById("search-btn");
+const searchResults     = document.getElementById("search-results");
+const searchError       = document.getElementById("search-error");
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
@@ -109,16 +122,40 @@ drawWheel(wheelCanvas);
   }
 })();
 
+// ── Tab switching ─────────────────────────────────────────────────────────────
+
+tabBtns.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const tab = btn.dataset.tab;
+    tabBtns.forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    screenRoulette.classList.remove("active");
+    screenSearch.classList.remove("active");
+
+    if (tab === "roulette") {
+      screenRoulette.classList.add("active");
+    } else if (tab === "search") {
+      screenSearch.classList.add("active");
+      loadFolders();
+    }
+  });
+});
+
 // ── Screen helpers ────────────────────────────────────────────────────────────
 
 function showLogin() {
+  tabBar.classList.add("hidden");
   screenLogin.classList.add("active");
   screenRoulette.classList.remove("active");
+  screenSearch.classList.remove("active");
 }
 
 function showRoulette(account) {
   screenLogin.classList.remove("active");
+  screenSearch.classList.remove("active");
   screenRoulette.classList.add("active");
+  tabBar.classList.remove("hidden");
   spinBtn.disabled = false;
 
   userBar.innerHTML = `
@@ -215,6 +252,92 @@ function hideEmailCard() {
   emptyMessage.classList.add("hidden");
 }
 
+// ── Mail Search ───────────────────────────────────────────────────────────────
+
+let foldersLoaded = false;
+
+async function loadFolders() {
+  if (foldersLoaded) return;
+  try {
+    const res = await fetch("/api/folders");
+    if (res.status === 401) { window.location.href = "/auth/login"; return; }
+    const data = await res.json();
+    if (data.folders) {
+      data.folders.forEach((f) => {
+        const opt = document.createElement("option");
+        opt.value = f.id;
+        opt.textContent = `${f.displayName} (${f.totalItemCount})`;
+        searchFolder.appendChild(opt);
+      });
+      foldersLoaded = true;
+    }
+  } catch {
+    // Non-fatal — folder dropdown stays with "All Mail" fallback
+  }
+}
+
+searchBtn.addEventListener("click", async () => {
+  searchError.classList.add("hidden");
+  searchResults.classList.add("hidden");
+  searchResults.innerHTML = "";
+  searchBtn.disabled = true;
+  searchBtn.textContent = "Searching…";
+
+  const params = new URLSearchParams();
+  if (searchFolder.value)          params.set("folder",          searchFolder.value);
+  if (searchQuery.value.trim())    params.set("query",           searchQuery.value.trim());
+  if (searchFrom.value.trim())     params.set("from",            searchFrom.value.trim());
+  if (searchSubject.value.trim())  params.set("subject",         searchSubject.value.trim());
+  if (searchAttachments.checked)   params.set("hasAttachments",  "true");
+
+  try {
+    const res  = await fetch("/api/search?" + params);
+    if (res.status === 401) { window.location.href = "/auth/login"; return; }
+    const data = await res.json();
+
+    if (data.error) {
+      searchError.textContent = data.error;
+      searchError.classList.remove("hidden");
+      return;
+    }
+
+    renderSearchResults(data.messages);
+  } catch {
+    searchError.textContent = "Network error. Please try again.";
+    searchError.classList.remove("hidden");
+  } finally {
+    searchBtn.disabled = false;
+    searchBtn.textContent = "Search";
+  }
+});
+
+function renderSearchResults(messages) {
+  if (!messages || messages.length === 0) {
+    searchResults.innerHTML = `<div class="card center-card"><p style="color:var(--muted)">No messages found.</p></div>`;
+    searchResults.classList.remove("hidden");
+    return;
+  }
+
+  searchResults.innerHTML = messages.map((msg) => `
+    <div class="result-item card">
+      <div class="result-header">
+        <span class="result-subject">${escHtml(msg.subject)}</span>
+        <span class="result-date">${formatDate(msg.receivedDateTime)}</span>
+      </div>
+      <div class="result-from">
+        <strong>From:</strong>
+        ${escHtml(msg.fromName ? msg.fromName + " " : "")}
+        <span class="email-addr">${escHtml(msg.from)}</span>
+        ${msg.hasAttachments ? '<span class="attachment-badge">&#128206;</span>' : ""}
+      </div>
+      <p class="email-preview">${escHtml(msg.bodyPreview || "(No preview)")}</p>
+      ${msg.webLink ? `<a href="${escHtml(msg.webLink)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">Open in Outlook</a>` : ""}
+    </div>
+  `).join("");
+
+  searchResults.classList.remove("hidden");
+}
+
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
 function sleep(ms) {
@@ -224,14 +347,18 @@ function sleep(ms) {
 function formatDate(iso) {
   if (!iso) return "";
   return new Date(iso).toLocaleString(undefined, {
-    year:  "numeric",
-    month: "short",
-    day:   "numeric",
-    hour:  "2-digit",
+    year:   "numeric",
+    month:  "short",
+    day:    "numeric",
+    hour:   "2-digit",
     minute: "2-digit",
   });
 }
 
 function escHtml(str) {
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }

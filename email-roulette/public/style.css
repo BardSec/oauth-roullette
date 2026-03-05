@@ -162,3 +162,104 @@ main { flex: 1; display: flex; flex-direction: column; align-items: center; padd
 
 /* ── Utility ───────────────────────────────────────────────────────────────── */
 .hidden { display: none !important; }
+
+/* ── Tab bar ───────────────────────────────────────────────────────────────── */
+.tab-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 1.5rem;
+}
+.tab-bar-inner {
+  max-width: 860px;
+  margin: 0 auto;
+  display: flex;
+  gap: 0.25rem;
+}
+.tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.75rem 1.1rem;
+  transition: color 0.15s, border-color 0.15s;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── Search form ───────────────────────────────────────────────────────────── */
+.search-form-card h2 { margin-bottom: 1.5rem; font-size: 1.1rem; }
+
+.search-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  align-items: center;
+  gap: 0.75rem;
+}
+.form-row label { color: var(--muted); font-size: 0.875rem; font-weight: 500; }
+
+.form-row input[type="text"],
+.form-row select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.9rem;
+  padding: 0.55rem 0.85rem;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+.form-row input[type="text"]:focus,
+.form-row select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.form-row select option { background: var(--surface); }
+
+.form-row-check { grid-template-columns: 1fr; }
+.check-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.check-label input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* ── Search results ────────────────────────────────────────────────────────── */
+.search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  width: 100%;
+  max-width: 860px;
+}
+
+.result-item { display: flex; flex-direction: column; gap: 0.65rem; }
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.result-subject { font-size: 1rem; font-weight: 700; color: var(--text); flex: 1; }
+.result-date { color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
+.result-from { font-size: 0.9rem; color: var(--muted); }
+.attachment-badge { margin-left: 0.35rem; }
