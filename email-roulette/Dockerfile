@@ -7,8 +7,8 @@ RUN addgroup -S app && adduser -S app -G app
 WORKDIR /app
 
 # Install dependencies first (cached layer)
-COPY package.json ./
-RUN npm install --omit=dev
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
 
 # Copy application code
 COPY src/ ./src/
